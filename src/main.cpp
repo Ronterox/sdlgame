@@ -42,8 +42,119 @@ char MAP_CHAR[][7] = {
         { 'x', ' ', ' ', ' ', ' ', ' ', 'x' },
 };
 
+struct Node
+{
+    int data;
+    Node* left;
+    Node* right;
+
+    explicit Node(int data)
+            : data(data), left(nullptr), right(nullptr)
+    {
+    }
+
+    ~Node()
+    {
+        LOG("Destruction! of " << data);
+    }
+};
+
+std::ostream& operator<<(std::ostream& str, Node const& v)
+{
+    return str << "Node: " << v.data;
+}
+
+Node* AddNode(Node* root, int data)
+{
+    if (!root) root = new Node(data);
+    else if (data <= root->data) root->left = AddNode(root->left, data);
+    else root->right = AddNode(root->right, data);
+
+    return root;
+}
+
+Node* SearchNode(Node* root, int data)
+{
+    if (!root || root->data == data) return root;
+    return SearchNode(data < root->data ? root->left : root->right, data);
+}
+
+Node* GetMin(Node* root)
+{
+    return root->left ? GetMin(root->left) : root;
+}
+
+Node* RemoveNode(Node* root, int data)
+{
+    if (!root) return nullptr;
+
+    if (root->data != data)
+    {
+        root->right = RemoveNode(root->right, data);
+        root->left = RemoveNode(root->left, data);
+    }
+    else if (root->right)
+    {
+        if (!root->left)
+        {
+            Node* temp = root;
+            root = root->right;
+            delete temp;
+        }
+        else
+        {
+            // TODO: Understand this better
+            Node* min = GetMin(root->right);
+            root->data = min->data;
+            root->right = RemoveNode(root->right, min->data);
+        }
+    }
+    else if (root->left)
+    {
+        Node* temp = root;
+        root = root->left;
+        delete temp;
+    }
+    else
+    {
+        Node* temp = root;
+        delete temp;
+    }
+
+    return root;
+}
+
+void FreeNodes(Node* root)
+{
+    if (root->left) FreeNodes(root->left);
+    if (root->right) FreeNodes(root->right);
+
+    delete root;
+}
+
 int main()
 {
+    auto show = [](Node* node) { if (node) LOG(*node); };
+
+    Node* root = nullptr;
+
+    root = AddNode(root, 5);
+    root = AddNode(root, 7);
+    root = AddNode(root, 10);
+    root = AddNode(root, 4);
+
+    show(SearchNode(root, 5));
+    show(SearchNode(root, 0));
+    show(SearchNode(root, 10));
+    show(SearchNode(root, 4));
+
+    // TODO: Fix errors I guess
+    root = RemoveNode(root, 10);
+    show(SearchNode(root, 10));
+
+    FreeNodes(root);
+
+    return 0;
     // Initialize libraries, for safety
     if (SDL_Init(SDL_INIT_VIDEO) > 0) LOG("SDL_Init HAS FAILED!!!. Error: " << SDL_GetError());
     if (!(IMG_Init(IMG_INIT_PNG))) LOG("IMG_Init HAS FAILED!!!. Error: " << SDL_GetError());
